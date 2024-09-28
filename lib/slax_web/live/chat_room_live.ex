@@ -48,31 +48,38 @@ defmodule SlaxWeb.ChatRoomLive do
   attr :room, Room, required: true
   defp room_link(assigns) do
     ~H"""
-    <a
+    <.link
       class={[
         "flex items-center h-8 text-sm pl-8 pr-3",
         (@active && "bg-slate-300") || "hover:bg-slate-300"
       ]}
-      href={~p"/rooms/#{@room}"}
+      navigate={~p"/rooms/#{@room}"}
     >
       <.icon name="hero-hashtag" class="h-4 w-4" />
       <span class={["ml-2 leading-none", @active && "font-bold"]}>
         <%= @room.name %>
       </span>
-    </a>
+    </.link>
     """
   end
 
-  def mount(params, _session, socket) do
+  @spec mount(map(), any(), any()) :: {:ok, any()}
+  def mount(_params, _session, socket) do
     rooms = Repo.all(Room)
-    room = case Map.fetch(params, "id") do
-      {:ok, id} ->
-        Repo.get!(Room, id)
+
+    {:ok, assign(socket, rooms: rooms)}
+  end
+
+  def handle_params(params, _session, socket) do
+    room =
+      case Map.fetch(params, "id") do
+        {:ok, id} ->
+          Repo.get!(Room, id)
 
         :error ->
-          List.first(rooms)
-    end
-    {:ok, assign(socket, hide_topic?: false, room: room, rooms: rooms)}
+          List.first(socket.asssigns.rooms)
+      end
+    {:noreply, assign(socket, hide_topic?: false, room: room)}
   end
 
   def handle_event("toggle-topic", _params, socket) do
