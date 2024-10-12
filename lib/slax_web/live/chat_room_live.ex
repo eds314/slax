@@ -89,7 +89,13 @@ defmodule SlaxWeb.ChatRoomLive do
           </ul>
         </div>
         <div id="room-messages" class="flex flex-col flex-grow overflow-auto" phx-update="stream">
-          <.message :for= {{dom_id, message} <- @streams.messages} current_user={@current_user} dom_id={dom_id} message={message} timezone={@timezone}/>
+          <.message
+            :for={{dom_id, message} <- @streams.messages}
+            current_user={@current_user}
+            dom_id={dom_id}
+            message={message}
+            timezone={@timezone}
+          />
         </div>
       </div>
       <div class="h-12 bg-white px-4 pb-4">
@@ -126,20 +132,20 @@ defmodule SlaxWeb.ChatRoomLive do
   defp message(assigns) do
     ~H"""
     <div id={@dom_id} class="group relative flex px-4 py-3">
-    <button
-      :if={@current_user.id == @message.user_id}
-      class="absolute top-4 right-4 text-red-500 hover:text-red-800 cursor-pointer hidden group-hover:block"
-      data-confirm="Are you sure you want to delete your previous message?"
-      phx-click="delete-message"
-      phx-value-id={@message.id}
+      <button
+        :if={@current_user.id == @message.user_id}
+        class="absolute top-4 right-4 text-red-500 hover:text-red-800 cursor-pointer hidden group-hover:block"
+        data-confirm="Are you sure you want to delete your previous message?"
+        phx-click="delete-message"
+        phx-value-id={@message.id}
       >
         <.icon name="hero-trash" class="h-4 w-4" />
-        </button>
+      </button>
       <div class="h-10 w-10 rounded flex-shrink-0 bg-slate-300"></div>
       <div class="ml-2">
         <div class="-mt-1">
           <.link class="text-sm font-semibold hover:underline">
-          <span><%= username(@message.user) %></span>
+            <span><%= username(@message.user) %></span>
           </.link>
           <span :if={@timezone} class="ml-1 text-xs text-gray-500">
             <%= message_timestamp(@message, @timezone) %>
@@ -191,8 +197,7 @@ defmodule SlaxWeb.ChatRoomLive do
   end
 
   def handle_params(params, _session, socket) do
-    if socket.assigns[:room], do:
-Chat.unsubscribe_from_room(socket.assigns.room)
+    if socket.assigns[:room], do: Chat.unsubscribe_from_room(socket.assigns.room)
 
     room =
       case Map.fetch(params, "id") do
@@ -223,7 +228,7 @@ Chat.unsubscribe_from_room(socket.assigns.room)
   end
 
   def handle_event("delete-message", %{"id" => id}, socket) do
-     Chat.delete_message_by_id(id, socket.assigns.current_user)
+    Chat.delete_message_by_id(id, socket.assigns.current_user)
 
     {:noreply, socket}
   end
@@ -233,6 +238,8 @@ Chat.unsubscribe_from_room(socket.assigns.room)
 
     socket =
       case Chat.create_message(room, message_params, current_user) do
+        {:ok, _message} -> ## This was causing the reload error
+          assign_message_form(socket, Chat.change_message(%Message{}))
 
         {:error, changeset} ->
           assign_message_form(socket, changeset)
@@ -240,7 +247,6 @@ Chat.unsubscribe_from_room(socket.assigns.room)
 
     {:noreply, socket}
   end
-
 
   def handle_event("toggle-topic", _params, socket) do
     {:noreply, update(socket, :hide_topic?, &(!&1))}
@@ -253,7 +259,7 @@ Chat.unsubscribe_from_room(socket.assigns.room)
   end
 
   def handle_info({:new_message, message}, socket) do
-      {:noreply, stream_insert(socket, :messages, message)}
+    {:noreply, stream_insert(socket, :messages, message)}
   end
 
   def handle_info({:message_deleted, message}, socket) do
