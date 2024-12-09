@@ -57,13 +57,12 @@ defmodule SlaxWeb.ChatRoomLive.Index do
   def mount(_params, _session, socket) do
     rooms = Chat.list_rooms_with_joined(socket.assigns.current_user)
 
-    socket =
-      socket
-      |> assign(:page_title, "All rooms")
-      |> stream_configure(:rooms, dom_id: fn {room, _} -> "rooms-#{room.id}" end)
-      |> stream(:rooms, rooms)
+    socket
+    |> assign(:page_title, "All rooms")
+    |> stream_configure(:rooms, dom_id: fn {room, _} -> "rooms-#{room.id}" end)
+    |> stream(:rooms, rooms)
+    |> ok()
 
-    {:ok, socket}
   end
 
   def handle_event("toggle-room-membership", %{"id" => id}, socket) do
@@ -72,7 +71,10 @@ defmodule SlaxWeb.ChatRoomLive.Index do
       |> Chat.get_room!()
       |> Chat.toggle_room_membership(socket.assigns.current_user)
 
-    {:noreply, stream_insert(socket, :rooms, {room, joined?})}
+      socket
+    |> stream_insert(:rooms, {room, joined?})
+    |> noreply()
+
   end
 
 end
